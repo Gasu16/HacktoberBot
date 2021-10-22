@@ -3,11 +3,24 @@ use futures::StreamExt;
 use telegram_bot::*;
 
 // Struct di esempio per i comandi [PURO SCOPO DIDATTICO!]
+
 /*
 pub struct Commands {
     pub kick: Command<kick>,
     pub ban:  Command<ban>,
 }*/
+
+/*
+
+   struct Commands {
+    // Some commands
+}
+
+let cmd = Commands {
+    // Implement commands
+};
+
+*/
 
 pub struct ChatMember {
     pub user: Box<User>,
@@ -89,6 +102,17 @@ async fn main() -> Result<(), Error> {
                             "Sei stato mutato {}",&message.from.first_name,
                         )))
                         .await?;
+                    },
+
+                    ".."            => {
+                        api.send(message.text_reply(format!(
+                            "...",
+                        )))
+                        .await?;
+                    },
+
+                    "-c" | "--command" => {
+                        // Interpreta i comandi bash, come echo per esempio
                     },
 
                     _               => println!("Questo comando non esiste"),
