@@ -8,7 +8,7 @@ use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 
 //use teloxide::types::ChatMemberKind;
-//use Message::Kind;
+//use Message::*;
 
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
@@ -25,6 +25,8 @@ enum Commands {
     Mute {time: u64, unit: UnitOfTime},
     #[command(description = "unban a user.")]
     Unban,
+    //#[command(description = "get a user id.")]
+    //Id,
 }
 
 enum UnitOfTime {
@@ -57,19 +59,43 @@ fn calc_restrict_time(time: u64, unit: UnitOfTime) -> Duration {
 
 type Cx = UpdateWithCx<AutoSend<Bot>, Message>;
 
+/*
+async fn get_user_id(cx: &Cx) { 
+    let m_id = get_id(&cx).await;
+    //let member = cx.requester.get_chat_member(cx.update.chat_id(), msg1.from().expect("my id expected").id).send().await?;
+            
+    //let _member = member.is_privileged(); // Pero' cosi' controllo chi sta "subendo" il comando, non chi lo invoca: da fixare
+    println!("{}", m_id);
+    //match _member {
+    //    true => {
+    //        cx.reply_to("true").send().await?;
+    //    }
+
+    //    false => {
+    //        cx.reply_to("false").send().await?;
+    //    }
+    //}
+
+}
+*/
+
+
 //Muta un utente rispondendo a un suo messaggio
 //Aggiungere opzione che muta per un numero n random di ore [FACOLTATIVO]
 //Aggiungere welcome_message e macro personalizzabili
 
 async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
+
         Some(msg1) => {
             
-            // Bot::from_env().get_chat_member(cx.update.chat_id(), msg1.from().unwrap().id).send().await?;
+            //let member = Bot::from_env().get_chat_member(cx.update.chat_id(), msg1.from().unwrap().id).send().await?;
             //let user_id = is_ok!(msg1.update.from()).id;
 
-            let member = cx.requester.get_chat_member(cx.update.chat_id(), msg1.from().unwrap().id).send().await?;
-            let _member = member.is_privileged();
+            //let member = cx.requester.get_chat_member(cx.update.chat_id(), msg1.from().unwrap().id).send().await?;
+            let member = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.from().unwrap().id).send().await?;
+            
+            let _member = member.is_privileged(); // Pero' cosi' controllo chi sta "subendo" il comando, non chi lo invoca: da fixare
             match _member {
                 true => {
                     cx.reply_to("true").send().await?;
@@ -190,6 +216,17 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands,) ->
         }
         
         Commands::Kick                           => {
+            let mbm = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.chat_id()).send().await?;
+            let _emember = mbm.is_privileged(); // Pero' cosi' controllo chi sta "subendo" il comando, non chi lo invoca: da fixare
+            match _emember {
+                true => {
+                    cx.reply_to("veramente true").send().await?;
+                }
+
+                false => {
+                    cx.reply_to("veramente false").send().await?;
+                }
+            }
             kick_user(&cx).await?;
             cx.answer(format!("Utente kickato")).await?
         }
