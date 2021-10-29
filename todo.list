@@ -1,5 +1,0 @@
-1) Fare in modo che il bot non si kicki/banni/muti da solo 
-2) Implementare il comando ban
-3) Fare un fork per Anubis Bot
-4) Implementare le macro e welcome_message
-5) Controllare se un utente e' ancora nel gruppo prima di procedere con determinati comandi (Non posso bannare un utente che e' gia' stato bannato ad esempio)
