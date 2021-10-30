@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 02:39 - 30/10/2021
+// Last edit: 03:10 - 30/10/2021
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -107,7 +107,7 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
                                     ) + time,
                                 )
                                 .await?;
-                            cx.answer(format!("Utente {} mutato", msg1.from().unwrap().first_name)).await?;
+                            cx.answer(format!("{} e' stato mutato", msg1.from().unwrap().first_name)).await?;
                         }
                     }
                 }
@@ -169,7 +169,7 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
                                 .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
                                 .send()
                                 .await?;
-                            cx.answer(format!("{} {}",str_msg, mes.from().unwrap().first_name)).await?;
+                            cx.answer(format!("{} {}", mes.from().unwrap().first_name, str_msg)).await?;
                             //cx.answer(format!("Utente {} kickato", mes.from().unwrap().id)).await?;
                         }
                     }
@@ -232,7 +232,7 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                                     cx.update.chat_id(),
                                     message.from().expect("Must be MessageKind::Common").id,
                                 ).await?;
-                            cx.answer(format!("Utente {} bannato", message.from().unwrap().first_name)).await?;
+                            cx.answer(format!("{} e' stato bannato", message.from().unwrap().first_name)).await?;
                         }
                     }
                 } 
@@ -255,7 +255,7 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         Commands::Help => cx.answer(Commands::descriptions()).await?,
         
         Commands::Unban                          => {
-            kick_user(&cx, "Utente sbannato").await?;
+            kick_user(&cx, "e' stato sbannato").await?;
             cx.answer(format!("")).await?
         }
 
@@ -265,7 +265,7 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         }
         
         Commands::Kick                           => {           
-            kick_user(&cx, "Utente kickato").await?;
+            kick_user(&cx, "e' stato kickato").await?;
             cx.answer(format!("")).await?
         }
 
