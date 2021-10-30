@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 03:10 - 30/10/2021
+// Last edit: 22:43 - 30/10/2021
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -7,15 +7,15 @@ use std::str;
 use std::str::FromStr;
 use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-
+//use teloxide::error_handlers::{ErrorHandler, IgnoringErrorHandler};
 //use teloxide::types::ChatMemberKind;
 //use Message::*;
 
 #[derive(BotCommand)]
-#[command(rename = "lowercase", description = "These commands are supported:")]
+#[command(rename = "lowercase", description = "These commands are supported:", parse_with = "split")]
 enum Commands {
-    #[command(description = "display this text.")]
-    Help,
+   // #[command(description = "display this text.")]
+   // Help,
     #[command(description = "handle a macro.", parse_with = "split")]
     Macro {option: String, macro_str: String},
     #[command(description = "ban a user.")]
@@ -26,6 +26,8 @@ enum Commands {
     Mute {time: u64, unit: UnitOfTime},
     #[command(description = "unban a user.")]
     Unban,
+    //#[command(description = "check the logs.")]
+    //Logs,
 }
 
 enum UnitOfTime {
@@ -102,12 +104,15 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
                                 )
                                 .until_date(
                                     DateTime::<Utc>::from_utc(
-                                    NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
-                                    Utc,
+                                        NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
+                                        Utc,
                                     ) + time,
                                 )
                                 .await?;
-                            cx.answer(format!("{} e' stato mutato", msg1.from().unwrap().first_name)).await?;
+                            cx.answer(format!("{} e' stato mutato fino al {}", msg1.from().unwrap().first_name, DateTime::<Utc>::from_utc(
+                                        NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
+                                        Utc,
+                                    ) + time)).await?;
                         }
                     }
                 }
@@ -249,30 +254,32 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
-async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
     match command {
 
-        Commands::Help => cx.answer(Commands::descriptions()).await?,
+        //Commands::Help => cx.answer(Commands::descriptions()).await?,
         
+        //Commands::Logs => cx.answer(format!("@rootinit Controlla i log")).await?,
+
         Commands::Unban                          => {
             kick_user(&cx, "e' stato sbannato").await?;
-            cx.answer(format!("")).await?
+            //cx.answer(format!("")).await?
         }
 
         Commands::Ban                            => {
             ban_user(&cx).await?;
-            cx.answer(format!("")).await?
+            //cx.answer(format!("")).await?
         }
         
         Commands::Kick                           => {           
             kick_user(&cx, "e' stato kickato").await?;
-            cx.answer(format!("")).await?
+            //cx.answer(format!("")).await?
         }
 
         
         Commands::Mute{time, unit}               => {
             mute_user(&cx, calc_restrict_time(time, unit)).await?;
-            cx.answer(format!("")).await?
+            //cx.answer(format!("")).await?
         }
 
         Commands::Macro{option, macro_str}       => {
@@ -280,15 +287,18 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
             match option.as_str() {
             
                 "-a" | "--add"                  => {
-                    cx.answer(format!("Macro {} aggiunta con opzione {}", macro_str, option)).await?
+                    print_(&cx, "Macro aggiunta").await?;
+                    //cx.answer(format!("Macro {} aggiunta con opzione {}", macro_str, option)).await?
                 },
 
                 "-e" | "--edit"                 => {
-                    cx.answer(format!("Macro editata")).await?
+                    print_(&cx, "Macro editata").await?;
+                    //cx.answer(format!("Macro editata")).await?
                 },
 
                 "-r" | "--remove"               => {
-                    cx.answer(format!("Macro rimossa")).await?
+                    print_(&cx, "Macro rimossa").await?;
+                    //cx.answer(format!("Macro rimossa")).await?
                 }
 
                 "-c" | "--to-ascii"              => {
@@ -297,17 +307,16 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
                     let j = ["echo", macro_str.as_str()].join(" ");
                     cmd.arg("-c").arg(j);
                     let _cmd = cmd.output().expect("Comando non letto correttamente");
-                         
-                    cx.answer(format!("{:?}", _cmd.stdout)).await?
+                  
+                    print_with(&cx, "{:?}", _cmd.stdout).await?;
+                    //cx.answer(format!("{:?}", _cmd.stdout)).await?
 
                 }
 
-                "-l" | "--log"                  => {
-                   cx.answer(format!("@rootinit controlla i log")).await?
+                _                               =>  {
+                    /*cx.answer("Comando non valido").await?*/ 
+                    print_(&cx, "Comando non valido").await?;
                 }
-
-                _                               =>  cx.answer("Comando non valido").await? 
-            
             }
         }
 
@@ -321,6 +330,20 @@ async fn main() {
     run().await;
 }
 
+async fn print_(cx: &Cx, to_print: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    if let Err(e) = cx.answer(format!("{}", to_print)).await {
+        println!("Error: {}", e.to_string());
+    }
+    Ok(())
+}
+
+async fn print_with(cx: &Cx, to_print_with: &str, to_arg_with: Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    if let Err(er) = cx.answer(format!("{} {:?}", to_print_with, to_arg_with)).await {
+        println!("Error: {}", er.to_string());
+    }
+    Ok(())
+}
+
 async fn run() {
     teloxide::enable_logging!();
     log::info!("Starting simple_commands_bot...");
@@ -330,5 +353,5 @@ async fn run() {
     let Me {user: _bot_user, ..} = _bot.get_me().await.unwrap();
     
     let _bot_name: String = "INIT.D".into();
-    teloxide::commands_repl(_bot, _bot_name, answer).await;
+    teloxide::commands_repl(_bot, _bot_name, action).await;
 }
