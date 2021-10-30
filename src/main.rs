@@ -1,4 +1,5 @@
 //#![allow(unused_imports)]
+// Last edit: 02:39 - 30/10/2021
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -25,8 +26,6 @@ enum Commands {
     Mute {time: u64, unit: UnitOfTime},
     #[command(description = "unban a user.")]
     Unban,
-    //#[command(description = "get a user id.")]
-    //Id,
 }
 
 enum UnitOfTime {
@@ -66,42 +65,66 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
     match cx.update.reply_to_message() {
 
         Some(msg1) => {
-            
-            let member = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.from().unwrap().id).send().await?;
-            
-            let _member = member.is_privileged();
 
-            match _member {
+            // Controlliamo i permessi di chi invoca il comando
+            // Che ruolo ha? Amministratore o utente
+
+            let member_mute = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.from().unwrap().id).send().await?;
+            
+            let _member_mute = member_mute.is_privileged();
+
+            match _member_mute {
 
                 true => {
-                    //cx.reply_to("true").send().await?;
-                    cx.requester
-                        .restrict_chat_member(
-                        cx.update.chat_id(),
-                        msg1.from().expect("Must be MessageKind::Common").id,
-                        ChatPermissions::default(),
-                        )
-                        .until_date(
-                            DateTime::<Utc>::from_utc(
-                            NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
-                            Utc,
-                            ) + time,
-                        )
-                        .await?;
-                    cx.answer(format!("Utente {} mutato", cx.update.from().unwrap().id)).await?;
-                    //cx.reply_to("Utente {} mutato", cx.update.from().unwrap().id).send().await?;
+
+                    // Se entra qui dentro vuol dire che un amministratore sta invocando il comando
+                    // Utente che "subisce" il comando
+                    // controlliamo se e' un admin o un normale utente
+
+                    let to_mute = cx.requester.get_chat_member(cx.update.chat_id(), msg1.from().unwrap().id).send().await?;
+                    let _to_mute = to_mute.is_privileged();
+
+                    match _to_mute {
+                        
+                        // L'utente che "subisce" il comando e' un amministratore
+                        true => {
+                            cx.reply_to("Non posso usare questo comando su un amministratore").send().await?;
+                        }
+
+                        // L'utente che "subisce" il comando e' un utente normale
+                        // Si puo' procedere con il comando
+                        false => {                    
+                            cx.requester
+                                .restrict_chat_member(
+                                cx.update.chat_id(),
+                                msg1.from().expect("Must be MessageKind::Common").id,
+                                ChatPermissions::default(),
+                                )
+                                .until_date(
+                                    DateTime::<Utc>::from_utc(
+                                    NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
+                                    Utc,
+                                    ) + time,
+                                )
+                                .await?;
+                            cx.answer(format!("Utente {} mutato", msg1.from().unwrap().first_name)).await?;
+                        }
+                    }
                 }
 
                 false => {
-                    cx.answer(format!("Non hai i privilegi per usare questo comando")).await?;
-                    //cx.reply_to("Non hai i privilegi per usare questo comando").send().await?;
+
+                    // Un utente normale sta cercando di usare un comando per soli amministratori
+
+                    cx.reply_to("Non hai i permessi necessari per usare questo comando").send().await?;
                 }
             }
         }
 
         None => {
-            cx.answer(format!("Usa questo comando in risposta ad un messaggio")).await?;
-            // cx.reply_to("Usa questo comando in risposta a un messaggio").send().await?;
+            // Non viene specificato nessun messaggio a cui rispondere
+
+            cx.reply_to("Usa questo comando in risposta a un messaggio").send().await?;
         }
     }
     Ok(())
@@ -109,35 +132,62 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
 
 
 // Kicka un utente
-async fn kick_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
+
         Some(mes) => {
+
+            // Controlliamo i permessi di chi invoca il comando
+            // Che ruolo ha? Amministratore o utente
 
             let member_kick = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.from().unwrap().id).send().await?;
             
             let _member_kick = member_kick.is_privileged();
             
             match _member_kick {
-                true => {
-                    cx.requester
-                    .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
-                    .send()
-                    .await?;
-                    cx.answer(format!("Utente {} kickato", cx.update.from().unwrap().id)).await?;
-                    //cx.reply_to("Utente {} kickato", cx.update.from().unwrap().id).send().await?;
 
+                true => {
+                    // Se entra qui dentro vuol dire che un amministratore sta invocando il comando
+                    // Utente che "subisce" il comando
+                    // controlliamo se e' un admin o un normale utente
+
+                    let to_kick = cx.requester.get_chat_member(cx.update.chat_id(), mes.from().unwrap().id).send().await?;
+                    let _to_kick = to_kick.is_privileged();
+                    
+                    match _to_kick {
+                        
+                        // L'utente che "subisce" il comando e' un amministratore
+                        true => {
+
+                            cx.reply_to("Non posso usare questo comando su un amministratore").send().await?;
+                        }
+                        
+                        // L'utente che "subisce" il comando e' un utente normale
+                        // Si puo' procedere con il comando
+                        false => {
+                            cx.requester
+                                .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
+                                .send()
+                                .await?;
+                            cx.answer(format!("{} {}",str_msg, mes.from().unwrap().first_name)).await?;
+                            //cx.answer(format!("Utente {} kickato", mes.from().unwrap().id)).await?;
+                        }
+                    }
                 }
 
                 false => {
-                    cx.answer(format!("Non hai i privilegi per usare questo comando")).await?;
-                    //cx.reply_to("Non hai i privilegi per usare questo comando").send().await?;
+
+                    // Un utente normale sta cercando di usare un comando per soli amministratori
+
+                    cx.reply_to("Non hai i permessi necessari per usare questo comando").send().await?;
                 }
             }
 
         }
         None => {
-            cx.answer(format!("Usa questo comando in risposta ad un messaggio")).await?;
-            //cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
+            // Non viene specificato nessun messaggio a cui rispondere
+            
+            cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
         }
     }
     Ok(())
@@ -148,58 +198,81 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
         Some(message) => {
             
+            // Controlliamo i permessi di chi invoca il comando
+            // Che ruolo ha? Amministratore o utente
+
             let member_ban = cx.requester.get_chat_member(cx.update.chat_id(), cx.update.from().unwrap().id).send().await?;
             
             let _member_ban = member_ban.is_privileged();
 
             match _member_ban {
-                true => {                
-                    cx.requester
-                    .kick_chat_member(
-                        cx.update.chat_id(),
-                        message.from().expect("Must be MessageKind::Common").id,
-                    ).await?;
-                    cx.answer(format!("Utente {} bannato", cx.update.from().unwrap().id)).await?;
-                } 
-                false => {
+                
+                true => { 
 
-                    cx.answer(format!("Non hai i priviegi per usare questo comando")).await?;
-                    //cx.reply_to("Non hai i priviegi per usare questo comando").send().await?;
+                    // Se entra qui dentro vuol dire che un amministratore sta invocando il comando
+                    // Utente che "subisce" il comando
+                    // controlliamo se e' un admin o un normale utente
+
+                    let to_ban = cx.requester.get_chat_member(cx.update.chat_id(), message.from().unwrap().id).send().await?;
+                    let _to_ban= to_ban.is_privileged();
+
+                    match _to_ban {
+            
+                        // L'utente che "subisce" il comando e' un amministratore
+                        true => {
+                            cx.reply_to("Non posso usare questo comando su un amministratore").send().await?;
+                        }
+                          
+                        // L'utente che "subisce" il comando e' un utente normale
+                        // Si puo' procedere con il comando
+                        false => {
+               
+                            cx.requester
+                                .kick_chat_member(
+                                    cx.update.chat_id(),
+                                    message.from().expect("Must be MessageKind::Common").id,
+                                ).await?;
+                            cx.answer(format!("Utente {} bannato", message.from().unwrap().first_name)).await?;
+                        }
+                    }
+                } 
+
+                false => {
+                    cx.reply_to("Non hai i priviegi per usare questo comando").send().await?;
                 }
             }
         }
         None => {
-            cx.answer(format!("Usa questo comando in risposta ad un messaggio")).await?;
-            //cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
+            cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
         }
     }
     Ok(())
 }
 
-async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands,) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
     match command {
 
         Commands::Help => cx.answer(Commands::descriptions()).await?,
         
         Commands::Unban                          => {
-            kick_user(&cx).await?;
-            cx.answer(format!("Utente unbannato")).await?
+            kick_user(&cx, "Utente sbannato").await?;
+            cx.answer(format!("")).await?
         }
 
         Commands::Ban                            => {
             ban_user(&cx).await?;
-            cx.answer(format!("Utente bannato")).await?
+            cx.answer(format!("")).await?
         }
         
         Commands::Kick                           => {           
-            kick_user(&cx).await?;
-            cx.answer(format!("Utente kickato")).await?
+            kick_user(&cx, "Utente kickato").await?;
+            cx.answer(format!("")).await?
         }
 
         
         Commands::Mute{time, unit}               => {
             mute_user(&cx, calc_restrict_time(time, unit)).await?;
-            cx.answer(format!("Utente mutato")).await?
+            cx.answer(format!("")).await?
         }
 
         Commands::Macro{option, macro_str}       => {
@@ -229,7 +302,11 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands,) ->
 
                 }
 
-                _                               =>  cx.answer("Comando non valido").await? // Wildcard
+                "-l" | "--log"                  => {
+                   cx.answer(format!("@rootinit controlla i log")).await?
+                }
+
+                _                               =>  cx.answer("Comando non valido").await? 
             
             }
         }
