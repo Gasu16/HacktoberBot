@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 03:02 - 31/10/2021
+// Last edit: 19:11 - 31/10/2021
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -244,7 +244,7 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                 } 
 
                 false => {
-                    cx.reply_to("Non hai i priviegi per usare questo comando").send().await?;
+                    cx.reply_to("Non hai i permessi necessari per usare questo comando").send().await?;
                 }
             }
         }
