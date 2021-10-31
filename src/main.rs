@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 19:11 - 31/10/2021
+// Last edit: 22:21 - 31/10/2021
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -29,6 +29,8 @@ enum Commands {
     On,
     #[command(description = "La mia pagina github.")]
     Info,
+    #[command(description = "Effettua un calcolo.")]
+    Calc {x: u32, y: u32, operator: String},
 }
 
 enum UnitOfTime {
@@ -60,6 +62,18 @@ fn calc_restrict_time(time: u64, unit: UnitOfTime) -> Duration {
 
 
 type Cx = UpdateWithCx<AutoSend<Bot>, Message>;
+
+/*
+async fn Calc(cx: &Cx, x: u64, y: u64, operator: &str) { 
+    match operator {
+        "+" => cx.answer(format!("{}", x+y)),
+        "-" => cx.answer(format!("{}", x-y)),
+        "x" => cx.answer(format!("{}", x*y)),
+        "/" => cx.answer(format!("{}", x/y)),
+        _   => cx.answer("Non ho capito che operazione vuoi fare"),
+    };
+}
+*/
 
 //Muta un utente rispondendo a un suo messaggio
 //Aggiungere welcome_message e macro personalizzabili
@@ -270,6 +284,84 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
             print_(&cx, "Sono online...").await?;
         }
 
+        Commands::Calc{x, y, operator}           => {
+            match operator.as_str() {
+                "+" | "add"                      => {
+                    let a = x.checked_add(y);
+                    match a {
+                        Some(_v_add) => {
+                            print_op(&cx, "", x+y).await?;
+                        }
+                        
+                        None => {
+                            print_(&cx, "Ops, non sono stato in grado di effettuare il calcolo, riprova").await?;
+                        }
+                    };
+
+                }
+
+                "-" | "sub"                      => {
+                    let s = x.checked_sub(y);
+                    match s {
+                        Some(_v_sub) => {
+                            print_op(&cx, "", x-y).await?;
+                        }
+                        
+                        None => {
+                            print_(&cx, "Ops, non sono stato in grado di effettuare il calcolo, riprova").await?;
+                        }
+                    };
+
+                }
+
+                "x" | "mul"                      => {
+                    let m = x.checked_add(y);
+                    match m {
+                        Some(_v_mul) => {
+                            print_op(&cx, "", x*y).await?;
+                        }
+                        
+                        None => {
+                            print_(&cx, "Ops, non sono stato in grado di effettuare il calcolo, riprova").await?;
+                        }
+                    };
+
+                }
+
+                "/" | "div"                      => {
+                    let d = x.checked_add(y);
+                    match d {
+                        Some(_v_div) => {
+                            print_op(&cx, "", x/y).await?;
+                        }
+                        
+                        None => {
+                            print_(&cx, "Ops, non sono stato in grado di effettuare il calcolo, riprova").await?;
+                        }
+                    };
+
+                }
+
+                "**"| "pow"                      => {
+                    //let p = x.pow(y);
+                    let p = x.checked_pow(y);
+                    match p {
+                        Some(_v) => {
+                            print_op(&cx, "", x.pow(y)).await?;
+                        }
+                        
+                        None => {
+                            print_(&cx, "Ops, non sono stato in grado di effettuare il calcolo, riprova").await?;
+                        }
+                    };
+                }
+
+                _                                => {
+                    print_(&cx, "Non ho capito che operazione devo fare ").await?;
+                }
+            }
+        }
+
         Commands::Info                           => {
             print_(&cx, "https://github.com/Gasu16/HacktoberBot").await?;    
         }
@@ -346,6 +438,15 @@ async fn print_with(cx: &Cx, to_print_with: &str, to_arg_with: Vec<u8>) -> Resul
     }
     Ok(())
 }
+
+async fn print_op(cx: &Cx, to_print_op: &str, to_arg_op: u32) -> Result<(), Box<dyn Error + Send + Sync>> {
+    if let Err(op_err) = cx.answer(format!("{} {:?}", to_print_op, to_arg_op)).await {
+        println!("Error: {}", op_err.to_string());
+    }
+    Ok(())
+}
+
+
 
 async fn run() {
     teloxide::enable_logging!();
