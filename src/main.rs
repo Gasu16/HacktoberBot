@@ -7,27 +7,28 @@ use std::str;
 use std::str::FromStr;
 use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-//use teloxide::error_handlers::{ErrorHandler, IgnoringErrorHandler};
-//use teloxide::types::ChatMemberKind;
-//use Message::*;
 
 #[derive(BotCommand)]
-#[command(rename = "lowercase", description = "These commands are supported:", parse_with = "split")]
+#[command(rename = "lowercase", description = "Lista comandi", parse_with = "split")]
 enum Commands {
-   // #[command(description = "display this text.")]
-   // Help,
-    #[command(description = "handle a macro.", parse_with = "split")]
+    #[command(description = "Mostra lista comandi.")]
+    Help,
+    #[command(description = "Gestisci una macro.", parse_with = "split")]
     Macro {option: String, macro_str: String},
-    #[command(description = "ban a user.")]
+    #[command(description = "Banna un utente da un gruppo.")]
     Ban, 
-    #[command(description = "kick a user.")]
+    #[command(description = "Kicka un utente da un gruppo.")]
     Kick,
-    #[command(description = "mute a user.", parse_with = "split")]    
+    #[command(description = "Muta un utente da un gruppo.", parse_with = "split")]    
     Mute {time: u64, unit: UnitOfTime},
-    #[command(description = "unban a user.")]
+    #[command(description = "Annulla il ban ad un utente di un gruppo.")]
     Unban,
-    //#[command(description = "check the logs.")]
-    //Logs,
+    #[command(description = "Controlla i log.")]
+    Logs,
+    #[command(description = "Il bot risponde?")]
+    On,
+    #[command(description = "La mia pagina github.")]
+    Info,
 }
 
 enum UnitOfTime {
@@ -129,7 +130,7 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
         None => {
             // Non viene specificato nessun messaggio a cui rispondere
 
-            cx.reply_to("Usa questo comando in risposta a un messaggio").send().await?;
+            cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
         }
     }
     Ok(())
@@ -257,48 +258,53 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
 async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
     match command {
 
-        //Commands::Help => cx.answer(Commands::descriptions()).await?,
-        
-        //Commands::Logs => cx.answer(format!("@rootinit Controlla i log")).await?,
+        Commands::Help                           => {
+            print_(&cx, &Commands::descriptions()).await?;
+        }
+
+        Commands::Logs                           => {
+            print_(&cx, "@rootinit controlla i log").await?;
+        }
+
+        Commands::On                             => {
+            print_(&cx, "Sono online...").await?;
+        }
+
+        Commands::Info                           => {
+            print_(&cx, "https://github.com/Gasu16/HacktoberBot").await?;    
+        }
 
         Commands::Unban                          => {
             kick_user(&cx, "e' stato sbannato").await?;
-            //cx.answer(format!("")).await?
         }
 
         Commands::Ban                            => {
             ban_user(&cx).await?;
-            //cx.answer(format!("")).await?
         }
         
         Commands::Kick                           => {           
             kick_user(&cx, "e' stato kickato").await?;
-            //cx.answer(format!("")).await?
         }
 
         
         Commands::Mute{time, unit}               => {
             mute_user(&cx, calc_restrict_time(time, unit)).await?;
-            //cx.answer(format!("")).await?
         }
 
         Commands::Macro{option, macro_str}       => {
             
             match option.as_str() {
             
-                "-a" | "--add"                  => {
+                "-a" | "--add"                   => {
                     print_(&cx, "Macro aggiunta").await?;
-                    //cx.answer(format!("Macro {} aggiunta con opzione {}", macro_str, option)).await?
-                },
+                }
 
-                "-e" | "--edit"                 => {
+                "-e" | "--edit"                  => {
                     print_(&cx, "Macro editata").await?;
-                    //cx.answer(format!("Macro editata")).await?
-                },
+                }
 
-                "-r" | "--remove"               => {
+                "-r" | "--remove"                => {
                     print_(&cx, "Macro rimossa").await?;
-                    //cx.answer(format!("Macro rimossa")).await?
                 }
 
                 "-c" | "--to-ascii"              => {
@@ -307,14 +313,11 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
                     let j = ["echo", macro_str.as_str()].join(" ");
                     cmd.arg("-c").arg(j);
                     let _cmd = cmd.output().expect("Comando non letto correttamente");
-                  
-                    print_with(&cx, "{:?}", _cmd.stdout).await?;
-                    //cx.answer(format!("{:?}", _cmd.stdout)).await?
+                    print_with(&cx, "", _cmd.stdout).await?;
 
                 }
 
-                _                               =>  {
-                    /*cx.answer("Comando non valido").await?*/ 
+                _                                => {
                     print_(&cx, "Comando non valido").await?;
                 }
             }
