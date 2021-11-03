@@ -7,7 +7,7 @@ use std::str;
 use std::str::FromStr;
 use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-
+use teloxide::types::Message;
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "Lista comandi", parse_with = "split")]
 enum Commands {
@@ -26,18 +26,20 @@ enum Commands {
     #[command(description = "Controlla i log.")]
     Logs,
     #[command(description = "Il bot risponde?")]
-    On,
+    Ping,
     #[command(description = "La mia pagina github.")]
     Info,
     #[command(description = "Effettua un calcolo.")]
     Calc {x: u32, y: u32, operator: String},
 }
 
+
 enum UnitOfTime {
     Seconds,
     Minutes,
     Hours,
 }
+
 
 impl FromStr for UnitOfTime {
     type Err = &'static str;
@@ -62,18 +64,6 @@ fn calc_restrict_time(time: u64, unit: UnitOfTime) -> Duration {
 
 
 type Cx = UpdateWithCx<AutoSend<Bot>, Message>;
-
-/*
-async fn Calc(cx: &Cx, x: u64, y: u64, operator: &str) { 
-    match operator {
-        "+" => cx.answer(format!("{}", x+y)),
-        "-" => cx.answer(format!("{}", x-y)),
-        "x" => cx.answer(format!("{}", x*y)),
-        "/" => cx.answer(format!("{}", x/y)),
-        _   => cx.answer("Non ho capito che operazione vuoi fare"),
-    };
-}
-*/
 
 //Muta un utente rispondendo a un suo messaggio
 //Aggiungere welcome_message e macro personalizzabili
@@ -216,6 +206,7 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
 // Banna un utente 
 async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
+
         Some(message) => {
             
             // Controlliamo i permessi di chi invoca il comando
@@ -232,10 +223,9 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                     // Se entra qui dentro vuol dire che un amministratore sta invocando il comando
                     // Utente che "subisce" il comando
                     // controlliamo se e' un admin o un normale utente
-
+                    
                     let to_ban = cx.requester.get_chat_member(cx.update.chat_id(), message.from().unwrap().id).send().await?;
                     let _to_ban= to_ban.is_privileged();
-
                     match _to_ban {
             
                         // L'utente che "subisce" il comando e' un amministratore
@@ -262,6 +252,7 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                 }
             }
         }
+
         None => {
             cx.reply_to("Usa questo comando in risposta ad un messaggio").send().await?;
         }
@@ -269,9 +260,11 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
-async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
-    match command {
 
+async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> Result<(), Box<dyn Error + Send + Sync>> {
+
+    match command { 
+        
         Commands::Help                           => {
             print_(&cx, &Commands::descriptions()).await?;
         }
@@ -280,8 +273,8 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
             print_(&cx, "@rootinit controlla i log").await?;
         }
 
-        Commands::On                             => {
-            print_(&cx, "Sono online...").await?;
+        Commands::Ping                           => {
+            print_(&cx, "pong").await?;
         }
 
         Commands::Calc{x, y, operator}           => {
@@ -447,13 +440,12 @@ async fn print_op(cx: &Cx, to_print_op: &str, to_arg_op: u32) -> Result<(), Box<
 }
 
 
-
 async fn run() {
     teloxide::enable_logging!();
     log::info!("Starting simple_commands_bot...");
 
     let _bot = Bot::from_env().auto_send();
-     
+
     let Me {user: _bot_user, ..} = _bot.get_me().await.unwrap();
     
     let _bot_name: String = "INIT.D".into();
