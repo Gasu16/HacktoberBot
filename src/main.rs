@@ -1,5 +1,6 @@
 //#![allow(unused_imports)]
-// Last edit: 03:20 - 03/11/2021
+// Last edit: 17:54 - 04/11/2021
+
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -8,6 +9,7 @@ use std::str::FromStr;
 use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use teloxide::types::Message;
+
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "Lista comandi", parse_with = "split")]
 enum Commands {
@@ -31,6 +33,8 @@ enum Commands {
     Info,
     #[command(description = "Effettua un calcolo.")]
     Calc {x: u32, y: u32, operator: String},
+    #[command(description = "Lista contatti utili.")]
+    Contatti {who: String},
 }
 
 
@@ -51,6 +55,19 @@ impl FromStr for UnitOfTime {
             _ => Err("Allowed units: h, m, s"),
         }
     }
+}
+
+
+struct Cinfo {
+    email: String,
+    sito: String,
+    telefono: String,
+}
+
+struct Didattica {
+    email: String,
+    sito: String,
+    telefono: String,
 }
 
 // Calculates time of user restriction.
@@ -114,10 +131,10 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
                                     ) + time,
                                 )
                                 .await?;
-                            cx.answer(format!("{} e' stato mutato fino al {}", msg1.from().unwrap().first_name, DateTime::<Utc>::from_utc(
+                            cx.reply_to(format!("{} e' stato mutato fino al {}", msg1.from().unwrap().first_name, DateTime::<Utc>::from_utc(
                                         NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
                                         Utc,
-                                    ) + time)).await?;
+                                    ) + time)).send().await?;
                         }
                     }
                 }
@@ -179,7 +196,7 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
                                 .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
                                 .send()
                                 .await?;
-                            cx.answer(format!("{} {}", mes.from().unwrap().first_name, str_msg)).await?;
+                            cx.reply_to(format!("{} {}", mes.from().unwrap().first_name, str_msg)).send().await?;
                             //cx.answer(format!("Utente {} kickato", mes.from().unwrap().id)).await?;
                         }
                     }
@@ -242,7 +259,7 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                                     cx.update.chat_id(),
                                     message.from().expect("Must be MessageKind::Common").id,
                                 ).await?;
-                            cx.answer(format!("{} e' stato bannato", message.from().unwrap().first_name)).await?;
+                            cx.reply_to(format!("{} e' stato bannato", message.from().unwrap().first_name)).send().await?;
                         }
                     }
                 } 
@@ -266,6 +283,7 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
     match command { 
         
         Commands::Help                           => {
+            //cx.reply_to(format!("{}", &Commands::descriptions())).send().await?;
             print_(&cx, &Commands::descriptions()).await?;
         }
 
@@ -275,6 +293,31 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
 
         Commands::Ping                           => {
             print_(&cx, "pong").await?;
+        }
+
+        Commands::Contatti{who}                  => {
+            match who.as_str() {
+                "cinfo"                          => {
+                    let cinfo = Cinfo {
+                        email: String::from("cinfo@unicam.it"),
+                        sito: String::from("https://cinfo.unicam.it"),
+                        telefono: String::from("0737402113"),
+                    };
+                    cx.reply_to(format!("Email: {}\nSito web: {}\nTelefono: {}", cinfo.email, cinfo.sito, cinfo.telefono)).send().await?;
+                }
+
+                "segreteria"                      => {
+                    let segreteria = Didattica {
+                        email: String::from("segreteriastudenti.scienze@unicam.it"),
+                        sito: String::from("https://www.unicam.it/studente/segreterie-studenti"),
+                        telefono: String::from("0737637336"),
+                    };
+                    cx.reply_to(format!("Email: {}\nSito web: {}\nTelefono: {}", segreteria.email, segreteria.sito, segreteria.telefono)).send().await?;
+                }
+                _                                => {
+                    cx.reply_to(format!("Devi specificare di chi vuoi i contatti (segreteria, cinfo, ecc...)")).send().await?;
+                }
+            };
         }
 
         Commands::Calc{x, y, operator}           => {
@@ -419,21 +462,21 @@ async fn main() {
 }
 
 async fn print_(cx: &Cx, to_print: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(e) = cx.answer(format!("{}", to_print)).await {
+    if let Err(e) = cx.reply_to(format!("{}", to_print)).send().await {
         println!("Error: {}", e.to_string());
     }
     Ok(())
 }
 
 async fn print_with(cx: &Cx, to_print_with: &str, to_arg_with: Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(er) = cx.answer(format!("{} {:?}", to_print_with, to_arg_with)).await {
+    if let Err(er) = cx.reply_to(format!("{} {:?}", to_print_with, to_arg_with)).send().await {
         println!("Error: {}", er.to_string());
     }
     Ok(())
 }
 
 async fn print_op(cx: &Cx, to_print_op: &str, to_arg_op: u32) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(op_err) = cx.answer(format!("{} {:?}", to_print_op, to_arg_op)).await {
+    if let Err(op_err) = cx.reply_to(format!("{} {:?}", to_print_op, to_arg_op)).send().await {
         println!("Error: {}", op_err.to_string());
     }
     Ok(())
