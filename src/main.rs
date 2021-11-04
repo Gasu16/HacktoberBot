@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 18:48 - 04/11/2021
+// Last edit: 19:00 - 04/11/2021
 
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
@@ -307,13 +307,19 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
                 }
 
                 "segreteria"                      => {
+                    
                     let segreteria = Didattica {
                         email: String::from("segreteriastudenti.scienze@unicam.it"),
                         sito: String::from("https://www.unicam.it/studente/segreterie-studenti"),
                         telefono: String::from("0737637336"),
                     };
-                    cx.reply_to(format!("Email: {}\nSito web: {}\nTelefono: {}", segreteria.email, segreteria.sito, segreteria.telefono)).send().await?;
-                cx.reply_to(format!("ORARI\nLunedi': 10:30 - 13:00\nMartedi': 15:00 - 17:00\nMercoledi': 10:30 - 13:00\nGiovedi': 15:00 - 17:00\nVenerdi': 10:30 - 13:00")).send().await?;
+                    
+                    cx.reply_to(format!("Email: {}\nSito web: {}\nTelefono: {}", 
+                                        segreteria.email, 
+                                        segreteria.sito, 
+                                        segreteria.telefono)).send().await?;
+                    
+                    cx.reply_to(format!("ORARI\nLunedi': 10:30 - 13:00\nMartedi': 15:00 - 17:00\nMercoledi': 10:30 - 13:00\nGiovedi': 15:00 - 17:00\nVenerdi': 10:30 - 13:00")).send().await?;
                 }
                 _                                => {
                     cx.reply_to(format!("Devi specificare di chi vuoi i contatti (segreteria, cinfo, ecc...)")).send().await?;
