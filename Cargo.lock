@@ -407,6 +407,7 @@ dependencies = [
  "chrono",
  "log",
  "pretty_env_logger",
+ "reqwest",
  "teloxide",
  "tokio",
 ]
