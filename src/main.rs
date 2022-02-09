@@ -57,6 +57,8 @@ enum Commands {
     Google {query: String},
     #[command(description = "Cerca sulla wiki di Arch Linux")]
     Wiki {query_arch: String},
+    #[command(description = "Cerca sulle pagine del manuale")]
+    Man {query_man: String},
 }
 
 
@@ -351,6 +353,11 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
             let result_arch = query_arch.replace(" ", "+");
             cx.reply_to(format!("https://wiki.archlinux.org/index.php?search={}", result_arch)).send().await?;
         }
+
+        Commands::Man{query_man}                 => {
+            cx.reply_to(format!("https://man.archlinux.org/search?q={}&go=Go", query_man)).send().await?;
+        }
+
 
         Commands::Contatti{who}                  => {
             match who.as_str() {
